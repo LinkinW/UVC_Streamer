@@ -141,6 +141,7 @@ int grab_frame(Cam *cam)
 
 int close_camera(Cam *cam)
 {
+	video_enable(dev, 0);
 	free(cam->framebuffer);
 	free(cam->jpgframe);
 	close(cam->dev);
