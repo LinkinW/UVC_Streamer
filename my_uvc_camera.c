@@ -25,6 +25,8 @@ int main(int argc, char *argv[])
 	cam.nbufs = V4L_BUFFERS_DEFAULT;
 
 	int ret;
+	FILE *file;
+
 
 	unsigned int i;//用于计数
 
@@ -38,19 +40,28 @@ int main(int argc, char *argv[])
 	}
 
 	//查看摄像头支持的图像格式
-	video_list_formats(cam.dev);
+	//video_list_formats(cam.dev);
 
-/*	ret = grab_frame(&cam);
+	ret = grab_frame(&cam);
 	if (ret < 0) {
 		printf("Error grab frame.\n");
 		close(cam.dev);
 		return ret;
 	}	
-*/
+
+	file = fopen("./1.jpg", "wb");
+	if (file != NULL) {
+		fwrite(cam.jpgframe, cam.framebuffer_size, 1, file);
+		fclose(file);
+	}else{
+		printf("Error open a file.\n");
+		return file;
+	}	
+
 	//打开socket,等待客户端连接
 	//server_up();
 	
 
-	close(cam.dev);
+	close_camera(&cam);
 
 }

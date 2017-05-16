@@ -8,7 +8,10 @@ int open_camera(Cam *cam)
      *
      */
 	int ret;
-	unsigned int i = 0;//用于计数
+	int i = 0;//用于计数
+	cam->framebuffer_size = (cam->width * cam->height << 1);
+	cam->framebuffer = (unsigned char *) calloc(1, (size_t) cam->framebuffer_size);
+	cam->jpgframe = (unsigned char *) calloc(1, (size_t) cam->framebuffer_size);
 
 	cam->dev = open(cam->cam_path, O_RDWR);
 	if (cam->dev < 0) {
@@ -97,6 +100,9 @@ int open_camera(Cam *cam)
 			return 1;
 		}
 	}
+
+	video_enable(cam->dev, 1);//打开VIDIOC_STREAMON
+
 	printf("ok!\n");
 }
 
@@ -106,7 +112,7 @@ int grab_frame(Cam *cam)
 	printf("Dequeue!\n");
 	/* Dequeue a buffer. */
 	memset(&cam->buf, 0, sizeof cam->buf);
-	cam->buf.index = 0;
+	//cam->buf.index = 0;
 	cam->buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	cam->buf.memory = V4L2_MEMORY_MMAP;
 	ret = ioctl(cam->dev, VIDIOC_DQBUF, &cam->buf);
@@ -116,7 +122,13 @@ int grab_frame(Cam *cam)
 		return 1;
 	}
 	printf("Dequeue!\n");
-	memcpy(cam->framebuffer, cam->mem[cam->buf.index], (size_t) cam->buf.bytesused);
+
+    if(cam->buf.bytesused > cam->framebuffer_size)
+        memcpy(cam->framebuffer, cam->mem[cam->buf.index], (size_t) cam->framebuffer_size);
+    else
+        memcpy(cam->framebuffer, cam->mem[cam->buf.index], (size_t) cam->buf.bytesused);
+
+    compress_yuyv_to_jpeg(cam, cam->jpgframe, cam->framebuffer_size, 100);
 
 	/* Requeue the buffer. */
 	ret = ioctl(cam->dev, VIDIOC_QBUF, &cam->buf);
@@ -125,6 +137,28 @@ int grab_frame(Cam *cam)
 		close(cam->dev);
 		return 1;
 	}	
+}
+
+int close_camera(Cam *cam)
+{
+	free(cam->framebuffer);
+	free(cam->jpgframe);
+	close(cam->dev);
+}
+
+static int video_enable(int dev, int enable)
+{
+	int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	int ret;
+
+	ret = ioctl(dev, enable ? VIDIOC_STREAMON : VIDIOC_STREAMOFF, &type);
+	if (ret < 0) {
+		printf("Unable to %s capture: %d.\n",
+			enable ? "start" : "stop", errno);
+		return ret;
+	}
+
+	return 0;
 }
 
 static int video_set_format(int dev, unsigned int w, unsigned int h, unsigned int format)
@@ -171,7 +205,7 @@ static int video_set_framerate(int dev)
 		parm.parm.capture.timeperframe.denominator);
 
 	parm.parm.capture.timeperframe.numerator = 1;
-	parm.parm.capture.timeperframe.denominator = 30;
+	parm.parm.capture.timeperframe.denominator = 25;
 
 	ret = ioctl(dev, VIDIOC_S_PARM, &parm);
 	if (ret < 0) {

@@ -11,6 +11,7 @@
 #include <linux/fb.h>
 #include <errno.h>
 #include <sys/ioctl.h>
+#include <stdlib.h>
 
 #include <linux/videodev2.h>
 
@@ -30,6 +31,7 @@ struct _Cam {
 	unsigned int height;
 	unsigned int nbufs;
 	unsigned char *framebuffer;//指向抓取的一帧图像
+	unsigned char *jpgframe;//转换后的jpg格式图像
 	int framebuffer_size;
 
 	struct v4l2_capability cap;
@@ -40,6 +42,8 @@ struct _Cam {
 
 int open_camera(Cam *cam);
 int grab_frame(Cam *cam);
+int close_camera(Cam *cam);
+static int video_enable(int dev, int enable);
 static int video_set_format(int dev, unsigned int w, unsigned int h, unsigned int format);
 static int video_set_framerate(int dev);
 static int video_reqbufs(int dev, int nbufs);
