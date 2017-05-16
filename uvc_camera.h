@@ -14,6 +14,8 @@
 
 #include <linux/videodev2.h>
 
+#include "huffman.h"
+
 #define V4L_BUFFERS_DEFAULT	8//默认的缓冲帧数
 #define V4L_BUFFERS_MAX		32//最大的缓冲帧数
 
@@ -27,6 +29,8 @@ struct _Cam {
 	unsigned int width;
 	unsigned int height;
 	unsigned int nbufs;
+	unsigned char *framebuffer;//指向抓取的一帧图像
+	int framebuffer_size;
 
 	struct v4l2_capability cap;
 	struct v4l2_buffer buf;
@@ -34,9 +38,16 @@ struct _Cam {
 	void *mem[V4L_BUFFERS_MAX];
 };
 
-int opnecamera(Cam *cam);
+int open_camera(Cam *cam);
+int grab_frame(Cam *cam);
 static int video_set_format(int dev, unsigned int w, unsigned int h, unsigned int format);
 static int video_set_framerate(int dev);
 static int video_reqbufs(int dev, int nbufs);
+static int enum_frame_sizes(int dev, __u32 pixfmt);
+void video_list_formats(int dev);
+int enum_frame_intervals(int dev, __u32 pixfmt, __u32 width, __u32 height);
+static void video_enum_inputs(int dev);
+static int video_get_input(int dev);
+static int video_set_input(int dev, unsigned int input);
 
 #endif

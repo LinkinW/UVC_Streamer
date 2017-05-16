@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 	unsigned int i;//用于计数
 
 	//打开摄像头并开始捕捉视频
-	ret = opnecamera(&cam);
+	ret = open_camera(&cam);
 	if (ret < 0) {
 		printf("Error opening camera %s.\n",
 			cam.cam_path);
@@ -37,6 +37,16 @@ int main(int argc, char *argv[])
 		return ret;
 	}
 
+	//查看摄像头支持的图像格式
+	video_list_formats(cam.dev);
+
+/*	ret = grab_frame(&cam);
+	if (ret < 0) {
+		printf("Error grab frame.\n");
+		close(cam.dev);
+		return ret;
+	}	
+*/
 	//打开socket,等待客户端连接
 	//server_up();
 	
